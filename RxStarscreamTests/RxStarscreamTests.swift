@@ -34,6 +34,7 @@ public func ==(lhs: WebSocketEvent, rhs: WebSocketEvent) -> Bool {
 class RxStarscreamTests: XCTestCase {
 
     private var connectedObserver: TestableObserver<Bool>!
+    private var sentObserver: TestableObserver<Void>!
     private var pongObserver: TestableObserver<WebSocketEvent>!
     private var responseObserver: TestableObserver<WebSocketEvent>!
     private var socket: WebSocket!
@@ -103,4 +104,5 @@ class RxStarscreamTests: XCTestCase {
         XCTAssertEqual(self.responseObserver.events.count, 1)
         XCTAssertEqual(WebSocketEvent.message(sentMessage), self.responseObserver.events[0].value.element!)
     }
+    
 }

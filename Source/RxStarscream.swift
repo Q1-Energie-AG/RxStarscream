@@ -7,7 +7,32 @@ import RxSwift
 import RxCocoa
 import Starscream
 
-public enum WebSocketEvent {
+public enum WebSocketEvent: Equatable {
+    public static func == (lhs: WebSocketEvent, rhs: WebSocketEvent) -> Bool {
+        switch (lhs, rhs) {
+        case (.connected, .connected):
+            return true
+        case  let (.disconnected(lError), .disconnected(rError)):
+            guard let leftError = lError, let rightError = rError else {
+                return lError == nil && rError == nil
+            }
+
+            if let  wsLeftError = leftError as? WSError, let wsRightError = rightError as? WSError {
+                return wsLeftError.code == wsRightError.code && wsLeftError.type == wsRightError.type
+            }
+            
+            return (leftError as NSError) == (rightError as NSError)
+        case let (.message(lmessage), .message(rmessage)):
+            return lmessage == rmessage
+        case let (.data(ldata), .data(rdata)):
+            return ldata == rdata
+        case (.pong, .pong):
+            return true
+        default:
+            return false
+        }
+    }
+    
     case connected
     case disconnected(Error?)
     case message(String)
@@ -105,43 +130,71 @@ extension Reactive where Base: WebSocketClient {
                     return false
                 }
             }
-            .map {
-                switch $0 {
-                case .connected:
-                    return true
-                default:
-                    return false
+            .map { $0 == .connected }
+    }
+    
+    public func connect() -> Single<Void> {
+        return Single.create { sub in
+            defer { self.base.connect() }
+            
+            return self.response
+                .filter { $0 == .connected }
+                .take(1)
+                .map { _ in () }
+                .asSingle()
+                .subscribe(sub)
+        }
+    }
+    
+    public func disconnect() -> Single<Void> {
+        if !base.isConnected {
+            return .just(())
+        }
+        
+        return Single.create { sub in
+            defer { self.base.disconnect() }
+            
+            return self.response
+                .filter {
+                    switch $0 {
+                    case .disconnected(_):
+                        return true
+                    default:
+                        return false
+                    }
                 }
+                .take(1)
+                .map { _ in () }
+                .asSingle()
+                .subscribe(sub)
         }
     }
 
-    public func write(data: Data) -> Observable<Void> {
-        return Observable.create { sub in
+    public func write(data: Data) -> Single<Void> {
+        
+        return Single.create { sub in
             self.base.write(data: data) {
-                sub.onNext(())
-                sub.onCompleted()
+                sub(.success(()))
             }
 
             return Disposables.create()
         }
     }
 
-    public func write(ping: Data) -> Observable<Void> {
-        return Observable.create { sub in
+    public func write(ping: Data) -> Single<Void> {
+        return Single.create { sub in
             self.base.write(ping: ping) {
-                sub.onNext(())
-                sub.onCompleted()
+                sub(.success(()))
             }
 
             return Disposables.create()
         }
     }
 
-    public func write(string: String) -> Observable<Void> {
-        return Observable.create { sub in
+    public func write(string: String) -> Single<Void> {
+        return Single.create { sub in
             self.base.write(string: string) {
-                sub.onNext(())
-                sub.onCompleted()
+                sub(.success(()))
             }
 
             return Disposables.create()

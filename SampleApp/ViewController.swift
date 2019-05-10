@@ -57,11 +57,16 @@ class ViewController: UIViewController {
             .drive(logTextView.rx.text)
             .disposed(by: disposeBag)
         
-        socket.connect()
+        socket.rx.connect()
+            .subscribe()
+            .disposed(by: disposeBag)
     }
 
     fileprivate func sendMessage(message: String) {
-        socket.write(string: message)
+        socket.rx.write(string: message)
+            .subscribe()
+            .disposed(by: disposeBag)
+
         writeSubject.onNext("SENT: \(message)")
         inputTextField.text = nil
         inputTextField.resignFirstResponder()

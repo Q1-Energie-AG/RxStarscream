@@ -12,6 +12,8 @@
 		0AC21D1422856A9600169294 /* RxRelay.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0AC21D1122856A8A00169294 /* RxRelay.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		0AC21D1522856A9E00169294 /* RxRelay.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AC21D1122856A8A00169294 /* RxRelay.framework */; };
 		0AC21D1622856AA500169294 /* RxRelay.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AC21D1122856A8A00169294 /* RxRelay.framework */; };
+		0AC21D1722856C1B00169294 /* RxRelay.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0AC21D082285659000169294 /* RxRelay.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		0AC21D182285752A00169294 /* RxRelay.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AC21D082285659000169294 /* RxRelay.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		0B4DAAC71E0497BC00ECDBF9 /* RxCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0B4DAAC61E0497BC00ECDBF9 /* RxCocoa.framework */; };
 		0B4DAAC81E04980000ECDBF9 /* RxCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0B4DAAC61E0497BC00ECDBF9 /* RxCocoa.framework */; };
 		0B4DAAC91E04980000ECDBF9 /* RxCocoa.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0B4DAAC61E0497BC00ECDBF9 /* RxCocoa.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -96,6 +98,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				0AC21D1722856C1B00169294 /* RxRelay.framework in CopyFiles */,
 				DF3045271FF31E5E009A779B /* RxStarscream.framework in CopyFiles */,
 				BEF3145B1E875DAA00C15DD4 /* RxTest.framework in CopyFiles */,
 				BEF314571E875D8500C15DD4 /* RxCocoa.framework in CopyFiles */,
@@ -111,6 +114,7 @@
 			dstSubfolderSpec = 10;
 			files = (
 				0B4DAAC91E04980000ECDBF9 /* RxCocoa.framework in Embed Frameworks */,
+				0AC21D182285752A00169294 /* RxRelay.framework in Embed Frameworks */,
 				E402203A1CFF3C6900C5A874 /* RxSwift.framework in Embed Frameworks */,
 				E402203C1CFF3C6900C5A874 /* Starscream.framework in Embed Frameworks */,
 			);
