@@ -15,6 +15,7 @@ class ViewController: UIViewController {
 
     private let disposeBag = DisposeBag()
     private let socket = WebSocket(url: URL(string: "wss://echo.websocket.org")!)
+    private var connection: WebSocketConnection<WebSocket>?
     private let writeSubject = PublishSubject<String>()
     
     override func viewDidLoad() {
@@ -33,7 +34,14 @@ class ViewController: UIViewController {
                     self.writeSubject.onNext("PING")
                 }).disposed(by: disposeBag)
         
-        let responseString = socket.rx.response
+    
+        
+        let responseString = socket.rx.connect()
+            .asObservable()
+            .do(onNext: { self.connection = $0 })
+            .flatMap {
+                $0.response
+            }
             .map { response -> String in
                 switch response {
                 case .connected:
@@ -47,8 +55,8 @@ class ViewController: UIViewController {
                 case .pong:
                     return "RESPONSE (Pong)"
                 }
-        }
-        
+            }
+                
         Observable.merge([responseString, writeSubject.asObservable()])
             .scan([]) { lastMsg, newMsg -> Array<String> in
                 return Array(lastMsg + [newMsg])
@@ -56,14 +64,10 @@ class ViewController: UIViewController {
             }.asDriver(onErrorJustReturn: "")
             .drive(logTextView.rx.text)
             .disposed(by: disposeBag)
-        
-        socket.rx.connect()
-            .subscribe()
-            .disposed(by: disposeBag)
     }
 
     fileprivate func sendMessage(message: String) {
-        socket.rx.write(string: message)
+        connection?.write(string: message)
             .subscribe()
             .disposed(by: disposeBag)
 

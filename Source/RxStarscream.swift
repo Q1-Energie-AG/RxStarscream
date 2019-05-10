@@ -70,7 +70,12 @@ public class RxWebSocketDelegateProxy<Client: WebSocketClient>: DelegateProxy<Cl
     }
 
     public func websocketDidDisconnect(socket: WebSocketClient, error: Error?) {
-        subject.onNext(WebSocketEvent.disconnected(error))
+        if let err = error {
+            subject.onError(err)
+        } else {
+            subject.onNext(WebSocketEvent.disconnected(error))
+            subject.onCompleted()
+        }
         forwardDelegate?.websocketDidDisconnect(socket: socket, error: error)
     }
 
@@ -94,14 +99,19 @@ public class RxWebSocketDelegateProxy<Client: WebSocketClient>: DelegateProxy<Cl
     }
 }
 
-extension Reactive where Base: WebSocketClient {
+public class WebSocketConnection<Client: WebSocketClient> {
+    var client: Client
+    var response: Observable<WebSocketEvent>
+    
 
-    public var response: Observable<WebSocketEvent> {
-        return RxWebSocketDelegateProxy.proxy(for: base).subject
+    
+    init(client: Client, response: Observable<WebSocketEvent>) {
+        self.client = client
+        self.response = response
     }
 
     public var text: Observable<String> {
-        return self.response
+        return response
             .filter {
                 switch $0 {
                 case .message:
@@ -114,45 +124,56 @@ extension Reactive where Base: WebSocketClient {
                 switch $0 {
                 case .message(let message):
                     return message
+                case .disconnected(let error):
+                    if let err = error {
+                        throw err
+                    }
+                    throw RxError.unknown
                 default:
                     return String()
                 }
-        }
-    }
-
-    public var connected: Observable<Bool> {
-        return response
-            .filter {
-                switch $0 {
-                case .connected, .disconnected:
-                    return true
-                default:
-                    return false
-                }
             }
-            .map { $0 == .connected }
     }
     
-    public func connect() -> Single<Void> {
+    public func write(data: Data) -> Single<Void> {
+        
         return Single.create { sub in
-            defer { self.base.connect() }
+            self.client.write(data: data) {
+                sub(.success(()))
+            }
             
-            return self.response
-                .filter { $0 == .connected }
-                .take(1)
-                .map { _ in () }
-                .asSingle()
-                .subscribe(sub)
+            return Disposables.create()
         }
     }
+    
+    public func write(ping: Data) -> Single<Void> {
+        return Single.create { sub in
+            self.client.write(ping: ping) {
+                sub(.success(()))
+            }
+            
+            return Disposables.create()
+        }
+    }
+    
+    public func write(string: String) -> Single<Void> {
+        return Single.create { sub in
+            self.client.write(string: string) {
+                sub(.success(()))
+            }
+            
+            return Disposables.create()
+        }
+    }
+    
     
     public func disconnect() -> Single<Void> {
-        if !base.isConnected {
+        if !client.isConnected {
             return .just(())
         }
         
         return Single.create { sub in
-            defer { self.base.disconnect() }
+            defer { self.client.disconnect() }
             
             return self.response
                 .filter {
@@ -169,35 +190,45 @@ extension Reactive where Base: WebSocketClient {
                 .subscribe(sub)
         }
     }
+    
+}
 
-    public func write(data: Data) -> Single<Void> {
-        
-        return Single.create { sub in
-            self.base.write(data: data) {
-                sub(.success(()))
-            }
-
-            return Disposables.create()
-        }
+extension Reactive where Base: WebSocketClient {
+    
+    public var response: Observable<WebSocketEvent> {
+        return RxWebSocketDelegateProxy.proxy(for: base).subject
     }
-
-    public func write(ping: Data) -> Single<Void> {
+    
+    public func connect() -> Single<WebSocketConnection<Base>> {
         return Single.create { sub in
-            self.base.write(ping: ping) {
-                sub(.success(()))
-            }
-
-            return Disposables.create()
-        }
-    }
-
-    public func write(string: String) -> Single<Void> {
-        return Single.create { sub in
-            self.base.write(string: string) {
-                sub(.success(()))
-            }
-
-            return Disposables.create()
+            
+            defer { self.base.connect() }
+            
+            return self.response
+                .filter {
+                    switch $0 {
+                    case .connected, .disconnected(_):
+                        return true
+                    default:
+                        return false
+                    }
+                }
+                .take(1)
+                .map {
+                    switch $0 {
+                    case .connected:
+                        return WebSocketConnection(client: self.base, response: self.response)
+                    case .disconnected(let error):
+                        if let err = error {
+                            throw err
+                        }
+                        throw RxError.unknown
+                    default:
+                        throw RxError.unknown
+                    }
+                }
+                .asSingle()
+                .subscribe(sub)
         }
     }
 }
